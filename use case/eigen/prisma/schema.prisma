@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  code      String   @id @default(uuid())
+  username  String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // mengecek apakah member sedang dalam pinalti 
+  isPenalized    Boolean   @default(false)
+  penaltyExpires DateTime?
+
+  // Relasi ke BorrowRecords
+  borrowRecords BorrowRecords[]
+}
+
+model Book {
+  code          String          @id @default(uuid())
+  title         String
+  author        String
+  stock         Int
+  // Relasi ke BorrowRecords
+  borrowRecords BorrowRecords[]
+}
+
+model BorrowRecords {
+  id            String    @id @default(uuid())
+  member        Member    @relation(fields: [memberCode], references: [code])
+  memberCode    String // Foreign key for Member
+  book          Book      @relation(fields: [bookCode], references: [code])
+  bookCode      String // Foreign key for Book
+  borrowDate    DateTime  @default(now())
+  returnDate    DateTime? // Field untuk tanggal pengembalian, null jika belum dikembalikan
+  maxReturnDate DateTime
+  isReturned    Boolean   @default(false)
+
+  @@unique([memberCode, bookCode, returnDate]) // Anggota hanya bisa meminjam buku yang sama sekali, sampai buku dikembalikan
+}
